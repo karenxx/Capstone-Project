@@ -3,7 +3,6 @@ package com.example.android.redditreader.UI;
 import android.graphics.Bitmap;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.webkit.WebView;
@@ -14,12 +13,10 @@ import com.example.android.redditreader.R;
 import com.example.android.redditreader.handler.AuthenHandler;
 
 import net.dean.jraw.auth.AuthenticationManager;
-import net.dean.jraw.auth.NoSuchTokenException;
-import net.dean.jraw.auth.TokenStore;
 import net.dean.jraw.http.NetworkException;
+import net.dean.jraw.http.oauth.Credentials;
 import net.dean.jraw.http.oauth.OAuthData;
 import net.dean.jraw.http.oauth.OAuthException;
-import net.dean.jraw.http.oauth.Credentials;
 
 import java.net.URL;
 
@@ -32,7 +29,7 @@ public class LoginActivity extends AppCompatActivity {
         setContentView(R.layout.activity_login);
         final WebView webView = (WebView) findViewById(R.id.webview);
 
-        final AuthenHandler authenHandler = new AuthenHandler(getApplicationContext(), tokenStore);
+        final AuthenHandler authenHandler = AuthenHandler.get(this);
         final URL authorizationUrl = authenHandler.getAuthUrl();
         // Load the authorization URL into the browser
         webView.loadUrl(authorizationUrl.toExternalForm());
@@ -43,7 +40,6 @@ public class LoginActivity extends AppCompatActivity {
                     Log.d(LOG_TAG, "webview url: " + url);
                     // We've detected the redirect URL
                     onUserChallenge(url, authenHandler.credentials);
-                    //  AuthenHandler.get().onUserChallenge(url, AuthenHandler.get().credentials);
                 } else if (url.contains("error=")) {
                     Toast.makeText(LoginActivity.this, "You must press 'allow' to log in with this account", Toast.LENGTH_SHORT).show();
                     webView.loadUrl(authorizationUrl.toExternalForm());
@@ -52,28 +48,6 @@ public class LoginActivity extends AppCompatActivity {
         });
     }
 
-    public TokenStore tokenStore = new TokenStore() {
-        @Override
-        public boolean isStored(String key) {
-            return PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).contains(key);
-        }
-
-        @Override
-        public String readToken(String key) throws NoSuchTokenException {
-            String token = PreferenceManager.getDefaultSharedPreferences(getApplicationContext())
-                    .getString(key, null);
-            if (token == null) {
-                throw new NoSuchTokenException(key);
-            }
-            return token;
-        }
-
-        @Override
-        public void writeToken(String key, String token) {
-            PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).edit()
-                    .putString(key, token);
-        }
-    };
 
     private void onUserChallenge(final String url, final Credentials creds) {
         new AsyncTask<String, Void, String>() {
@@ -97,5 +71,4 @@ public class LoginActivity extends AppCompatActivity {
             }
         }.execute(url);
     }
-
 }
