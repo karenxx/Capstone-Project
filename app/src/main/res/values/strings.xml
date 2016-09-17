@@ -1,5 +1,7 @@
 <resources>
     <string name="app_name">Reddit Reader</string>
+    <string name="sync_account_type">redditreader.example.com</string>
+    <string name="content_authority">com.example.android.redditreader</string>
 
      <string name="appbar_scrolling_view_behavior" translatable="false">
         android.support.design.widget.AppBarLayout$ScrollingViewBehavior</string>

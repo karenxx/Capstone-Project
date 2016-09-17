@@ -10,6 +10,7 @@ import android.widget.Toast;
 import com.example.android.redditreader.R;
 import com.example.android.redditreader.UserInfoActivity;
 import com.example.android.redditreader.handler.AuthenHandler;
+import com.example.android.redditreader.sync.SubredditSyncAdapter;
 
 import net.dean.jraw.auth.AuthenticationManager;
 
@@ -21,6 +22,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         //startActivity(new Intent(this, LoginActivity.class));
+        SubredditSyncAdapter.initializeSyncAdapter(this);
     }
 
     public void userInfo(View view) {
