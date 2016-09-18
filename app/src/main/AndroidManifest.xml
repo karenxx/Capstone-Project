@@ -26,21 +26,31 @@
 
         <provider
             android:name=".data.RedditProvider"
-            android:authorities="com.example.android.redditreader"
+            android:authorities="@string/content_authority"
             android:enabled="true"
-            android:exported="true" />
-
+            android:exported="true"
+            android:syncable="true" />
 
         <!-- The SyncAdapter service -->
         <service
             android:name=".sync.SubredditSyncService"
-            android:exported="true">
+            android:exported="true" >
             <intent-filter>
-                <action android:name="android.content.SyncAdapter"/>
+                <action android:name="android.content.SyncAdapter" />
             </intent-filter>
+
             <meta-data
                 android:name="android.content.SyncAdapter"
-                android:resource="@xml/syncadapter_subreddit"/>
+                android:resource="@xml/syncadapter_subreddit" />
+        </service>
+        <service
+            android:name="com.example.android.redditreader.sync.SubredditAuthenticatorService">
+            <intent-filter>
+                <action android:name="android.accounts.AccountAuthenticator"/>
+            </intent-filter>
+            <meta-data
+                android:name="android.accounts.AccountAuthenticator"
+                android:resource="@xml/authenticator" />
         </service>
     </application>
 

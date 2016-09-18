@@ -7,24 +7,25 @@ import android.content.ContentProviderClient;
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.SyncRequest;
 import android.content.SyncResult;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 
 import com.example.android.redditreader.R;
-import com.example.android.redditreader.data.RedditContract.SubredditEntry;
+import com.example.android.redditreader.data.RedditContract;
 
 import net.dean.jraw.RedditClient;
 import net.dean.jraw.auth.AuthenticationManager;
 import net.dean.jraw.models.Listing;
+import net.dean.jraw.models.Submission;
 import net.dean.jraw.models.Subreddit;
+import net.dean.jraw.paginators.SubredditPaginator;
 import net.dean.jraw.paginators.UserSubredditsPaginator;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 
@@ -32,16 +33,22 @@ public class SubredditSyncAdapter extends AbstractThreadedSyncAdapter {
     private final String LOG_TAG = getClass().getSimpleName();
     public static final int SYNC_INTERVAL = 60 * 60 * 24;
     public static final int SYNC_FLEXTIME = SYNC_INTERVAL / 24;
+    public static final String PREF_SEPARATOR = "#";
+    public static final String ID_NAME_SEPARATOR = "/";
+    private static final int POST_LIMIT_COUNT = 100;
     ContentResolver mContentResolver;
+    final Context mContext;
 
     public SubredditSyncAdapter(Context context, boolean autoInitialize) {
         super(context, autoInitialize);
         mContentResolver = context.getContentResolver();
+        mContext = context;
     }
 
     public SubredditSyncAdapter(Context context, boolean autoInitialize, boolean allowParallelSyncs) {
         super(context, autoInitialize, allowParallelSyncs);
         mContentResolver = context.getContentResolver();
+        mContext = context;
     }
 
     @Override
@@ -49,15 +56,59 @@ public class SubredditSyncAdapter extends AbstractThreadedSyncAdapter {
         Log.d(LOG_TAG, "Starting sync");
 
         RedditClient redditClient = AuthenticationManager.get().getRedditClient();
-        UserSubredditsPaginator paginator = new UserSubredditsPaginator(redditClient, "subscriber");
-        HashMap<String, Subreddit> userSubreddit = new HashMap<>();
+        UserSubredditsPaginator userSubredditsPaginator = new UserSubredditsPaginator(redditClient, "subscriber");
+        String subredditPref = "";
+        List<String> subredditList = new ArrayList<>();
         try {
-            while (paginator.hasNext()) {
-                Listing<Subreddit> subreddits = paginator.next();
+            while (userSubredditsPaginator.hasNext()) {
+                Listing<Subreddit> subreddits = userSubredditsPaginator.next();
                 for (Subreddit subreddit : subreddits) {
                     if (!subreddit.isNsfw()) {
                         Log.d(LOG_TAG, "subreddit ID: " + subreddit.getId() + subreddit.getDisplayName());
-                        userSubreddit.put(subreddit.getId(), subreddit);
+                        subredditPref += subreddit.getId() + ID_NAME_SEPARATOR + subreddit.getDisplayName() + PREF_SEPARATOR;
+                        subredditList.add(subreddit.getDisplayName());
+                    }
+                }
+            }
+            SharedPreferences.Editor editor = mContext.getSharedPreferences(mContext.getString(R.string.subreddit_file_key), Context.MODE_PRIVATE).edit();
+            editor.putString(mContext.getString(R.string.saved_subreddit_key), subredditPref);
+            Log.d(LOG_TAG, "write to sharedpref");
+            editor.apply();
+        } catch (Exception e) {
+            Log.e(LOG_TAG, "Error message: ", e);
+        }
+
+        // Remove all old submission in provider.
+        try {
+            int rowDeleted = provider.delete(RedditContract.BASE_CONTETN_URI, null, null);
+            Log.d(LOG_TAG, "row deleted: " + rowDeleted);
+        } catch (Exception e) {
+            Log.e(LOG_TAG, "Error message: ", e);
+        }
+
+        SubredditPaginator subredditPaginator = new SubredditPaginator(redditClient);
+        subredditPaginator.setLimit(POST_LIMIT_COUNT);
+        if (subredditList.size() == 0) {
+            Log.e(LOG_TAG, "No subreddit");
+            return;
+        }
+        if (subredditList.size() == 1) {
+            subredditPaginator.setSubreddit(subredditList.get(0));
+        } else {
+            subredditPaginator.setSubreddit(subredditList.get(0), subredditList.subList(1, subredditList.size()).toArray(new String[0]));
+        }
+        List<ContentValues> result = new ArrayList<>();
+        try {
+            while (subredditPaginator.hasNext()) {
+                Listing<Submission> submissions = subredditPaginator.next();
+                for (Submission submission : submissions) {
+                    if (!submission.isNsfw()) {
+                        ContentValues contentValues = new ContentValues();
+                        contentValues.put(RedditContract.PostEntry.COLUMN_AUTHOR, submission.getAuthor());
+                        contentValues.put(RedditContract.PostEntry.COLUMN_TITLE, submission.getTitle());
+                        contentValues.put(RedditContract.PostEntry.COLUMN_PERMLINK, submission.getPermalink());
+                        contentValues.put(RedditContract.PostEntry.COLUMN_SUBREDDIT_NAME, submission.getSubredditName());
+                        result.add(contentValues);
                     }
                 }
             }
@@ -65,24 +116,8 @@ public class SubredditSyncAdapter extends AbstractThreadedSyncAdapter {
             Log.e(LOG_TAG, "Error message: ", e);
         }
 
-
-        List<ContentValues> result = new ArrayList<>();
-        for (Subreddit subreddit : userSubreddit.values()) {
-            ContentValues subredditValues = new ContentValues();
-            String id = subreddit.getId();
-            subredditValues.put(SubredditEntry._ID, id);
-            subredditValues.put(SubredditEntry.COLUMN_NAME, subreddit.getDisplayName());
-            subredditValues.put(SubredditEntry.COLUMN_DESCRIPTION, subreddit.getPublicDescription());
-            result.add(subredditValues);
-        }
-        Uri uri = SubredditEntry.CONTENT_URI;
         try {
-            for (ContentValues cv : result) {
-                String subredditId = cv.getAsString(SubredditEntry._ID);
-                mContentResolver.delete(uri, SubredditEntry._ID + "=?", new String[]{subredditId});
-                mContentResolver.insert(uri, cv);
-            }
-            Log.d(LOG_TAG, "sync complete" + result.size() + " inserted");
+            Log.d(LOG_TAG,  mContentResolver.bulkInsert(RedditContract.BASE_CONTETN_URI, result.toArray(new ContentValues[0])) + " inserted");
         }catch (Exception e) {
             Log.e(LOG_TAG, "ERROR: ", e);
         }
