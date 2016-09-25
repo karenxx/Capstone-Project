@@ -16,6 +16,7 @@ import android.util.Log;
 
 import com.example.android.redditreader.R;
 import com.example.android.redditreader.data.RedditContract;
+import com.example.android.redditreader.data.RedditContract.PostEntry;
 
 import net.dean.jraw.RedditClient;
 import net.dean.jraw.auth.AuthenticationManager;
@@ -34,7 +35,6 @@ public class SubredditSyncAdapter extends AbstractThreadedSyncAdapter {
     public static final int SYNC_INTERVAL = 60 * 60 * 24;
     public static final int SYNC_FLEXTIME = SYNC_INTERVAL / 24;
     public static final String PREF_SEPARATOR = "#";
-    public static final String ID_NAME_SEPARATOR = "/";
     private static final int POST_LIMIT_COUNT = 100;
     ContentResolver mContentResolver;
     final Context mContext;
@@ -65,7 +65,7 @@ public class SubredditSyncAdapter extends AbstractThreadedSyncAdapter {
                 for (Subreddit subreddit : subreddits) {
                     if (!subreddit.isNsfw()) {
                         Log.d(LOG_TAG, "subreddit ID: " + subreddit.getId() + subreddit.getDisplayName());
-                        subredditPref += subreddit.getId() + ID_NAME_SEPARATOR + subreddit.getDisplayName() + PREF_SEPARATOR;
+                        subredditPref += subreddit.getDisplayName() + PREF_SEPARATOR;
                         subredditList.add(subreddit.getDisplayName());
                     }
                 }
@@ -74,14 +74,6 @@ public class SubredditSyncAdapter extends AbstractThreadedSyncAdapter {
             editor.putString(mContext.getString(R.string.saved_subreddit_key), subredditPref);
             Log.d(LOG_TAG, "write to sharedpref");
             editor.apply();
-        } catch (Exception e) {
-            Log.e(LOG_TAG, "Error message: ", e);
-        }
-
-        // Remove all old submission in provider.
-        try {
-            int rowDeleted = provider.delete(RedditContract.BASE_CONTETN_URI, null, null);
-            Log.d(LOG_TAG, "row deleted: " + rowDeleted);
         } catch (Exception e) {
             Log.e(LOG_TAG, "Error message: ", e);
         }
@@ -95,7 +87,8 @@ public class SubredditSyncAdapter extends AbstractThreadedSyncAdapter {
         if (subredditList.size() == 1) {
             subredditPaginator.setSubreddit(subredditList.get(0));
         } else {
-            subredditPaginator.setSubreddit(subredditList.get(0), subredditList.subList(1, subredditList.size()).toArray(new String[0]));
+            subredditPaginator.setSubreddit(subredditList.get(0),
+                    subredditList.subList(1, subredditList.size()).toArray(new String[0]));
         }
         List<ContentValues> result = new ArrayList<>();
         try {
@@ -104,10 +97,13 @@ public class SubredditSyncAdapter extends AbstractThreadedSyncAdapter {
                 for (Submission submission : submissions) {
                     if (!submission.isNsfw()) {
                         ContentValues contentValues = new ContentValues();
-                        contentValues.put(RedditContract.PostEntry.COLUMN_AUTHOR, submission.getAuthor());
-                        contentValues.put(RedditContract.PostEntry.COLUMN_TITLE, submission.getTitle());
-                        contentValues.put(RedditContract.PostEntry.COLUMN_PERMLINK, submission.getPermalink());
-                        contentValues.put(RedditContract.PostEntry.COLUMN_SUBREDDIT_NAME, submission.getSubredditName());
+                        contentValues.put(PostEntry.COLUMN_AUTHOR, submission.getAuthor());
+                        contentValues.put(PostEntry.COLUMN_TITLE, submission.getTitle());
+                        contentValues.put(PostEntry.COLUMN_PERMLINK, submission.getPermalink());
+                        contentValues.put(PostEntry.COLUMN_SUBREDDIT_NAME, submission.getSubredditName());
+                        contentValues.put(PostEntry.COLUMN_THUMBNAIL, submission.getThumbnail());
+                        contentValues.put(PostEntry.COLUMN_SCORE, submission.getScore());
+                        contentValues.put(PostEntry.COLUMN_COMMENT_COUNT, submission.getCommentCount());
                         result.add(contentValues);
                     }
                 }
@@ -117,8 +113,8 @@ public class SubredditSyncAdapter extends AbstractThreadedSyncAdapter {
         }
 
         try {
-            Log.d(LOG_TAG,  mContentResolver.bulkInsert(RedditContract.BASE_CONTETN_URI, result.toArray(new ContentValues[0])) + " inserted");
-        }catch (Exception e) {
+            Log.d(LOG_TAG, mContentResolver.bulkInsert(RedditContract.BASE_CONTETN_URI, result.toArray(new ContentValues[0])) + " inserted");
+        } catch (Exception e) {
             Log.e(LOG_TAG, "ERROR: ", e);
         }
     }

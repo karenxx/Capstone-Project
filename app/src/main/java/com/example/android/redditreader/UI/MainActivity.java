@@ -3,30 +3,41 @@ package com.example.android.redditreader.UI;
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.annotation.TargetApi;
-import android.content.BroadcastReceiver;
+import android.app.LoaderManager;
 import android.content.ContentResolver;
 import android.content.Context;
+import android.content.CursorLoader;
 import android.content.Intent;
+import android.content.Loader;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentStatePagerAdapter;
+import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
-import android.widget.Toast;
 
 import com.example.android.redditreader.R;
-import com.example.android.redditreader.UserInfoActivity;
 import com.example.android.redditreader.data.RedditContract;
 import com.example.android.redditreader.handler.AuthenHandler;
 import com.example.android.redditreader.sync.SubredditSyncAdapter;
 
 import net.dean.jraw.auth.AuthenticationManager;
 
-public class MainActivity extends AppCompatActivity {
-    private static final String TAG = "MainActivity";
+import java.util.ArrayList;
+import java.util.List;
 
+public class MainActivity extends AppCompatActivity implements
+        LoaderManager.LoaderCallbacks<Cursor>, MainFragment.OnActiveSubredditChangeListener, MainFragment.Callback{
+    private static final String TAG = "MainActivity";
+    private static final int POST_LOADER = 0;
+
+    TabPagerAdapter mTabPagerAdapter;
+    ViewPager mViewpager;
 
     public static final String AUTHORITY = "com.example.android.redditreader";
     // An account type, in the form of a domain name
@@ -36,12 +47,16 @@ public class MainActivity extends AppCompatActivity {
     // Instance fields
     Account mAccount;
 
-    SharedPreferences.OnSharedPreferenceChangeListener mListener = new SharedPreferences.OnSharedPreferenceChangeListener() {
+    private List<String> mSubredditList = new ArrayList<>();
+    private String mActiveSubreddit;
+    private MainFragment mActiveFragment;
+
+    SharedPreferences.OnSharedPreferenceChangeListener mSubredditPrefListener = new SharedPreferences.OnSharedPreferenceChangeListener() {
         @Override
         public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
             Log.d(TAG, "saved subreddit key changed " + key);
             if (key.equals(getString(R.string.saved_subreddit_key))) {
-                Log.d(TAG, "saved subreddit key changed");
+                updateSubreddits();
             }
         }
     };
@@ -50,31 +65,38 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        mViewpager = (ViewPager) findViewById(R.id.pager);
+        updateSubreddits();
         registerSubredditObserver();
         mAccount = createSyncAccount(this);
+        getLoaderManager().initLoader(POST_LOADER, null, this);
     }
 
     private void registerSubredditObserver() {
         SharedPreferences prefs = getSharedPreferences(getString(R.string.subreddit_file_key), Context.MODE_PRIVATE);
-        prefs.registerOnSharedPreferenceChangeListener(mListener);
+        prefs.registerOnSharedPreferenceChangeListener(mSubredditPrefListener);
+    }
+
+    private void updateSubreddits() {
+        SharedPreferences prefs = getSharedPreferences(getString(R.string.subreddit_file_key), Context.MODE_PRIVATE);
+        String subreddits = prefs.getString(getString(R.string.saved_subreddit_key), null);
+        mSubredditList.clear();
+        if (subreddits != null) {
+            String[] subredditsArray = subreddits.split(SubredditSyncAdapter.PREF_SEPARATOR);
+            for (String str : subredditsArray) {
+                if (str.length() != 0) {
+                    mSubredditList.add(str);
+                }
+            }
+        }
+        mTabPagerAdapter = new TabPagerAdapter(getSupportFragmentManager());
+        mViewpager.setAdapter(mTabPagerAdapter);
     }
 
     public void userInfo(View view) {
-        Cursor cursor = getContentResolver().query(
-                RedditContract.PostEntry.buildPostBySubreddit("funny"),   // The content URI of the words table
-                null,                        // The columns to return for each row
-                null,                    // Selection criteria
-                null,                     // Selection criteria
-                null);                        // The sort order for the returned rows
-        if (cursor != null) {
-            cursor.moveToFirst();
-            while (cursor.moveToNext()) {
-                String sub = cursor.getString(cursor.getColumnIndex(RedditContract.PostEntry.COLUMN_SUBREDDIT_NAME));
-                String title = cursor.getString(cursor.getColumnIndex(RedditContract.PostEntry.COLUMN_TITLE));
-                Log.d(TAG, sub + " " + title);
-            }
-            cursor.close();
-        }
+        Log.d(TAG, "userinfo restart cursor loader");
+        getLoaderManager().restartLoader(POST_LOADER, null, this);
     }
 
     @TargetApi(Build.VERSION_CODES.JELLY_BEAN)
@@ -147,5 +169,77 @@ public class MainActivity extends AppCompatActivity {
             Log.e(TAG, "createSyncAccount() error");
         }
         return newAccount;
+    }
+
+    @Override
+    public Loader<Cursor> onCreateLoader(int id, Bundle args) {
+        switch (id) {
+            case POST_LOADER:
+                // Returns a new CursorLoader
+                return new CursorLoader(
+                        this,
+                        RedditContract.PostEntry.buildPostBySubreddit(mActiveSubreddit),
+                        null,
+                        null,
+                        null,
+                        null
+                );
+            default:
+                // An invalid id was passed in
+                return null;
+        }
+    }
+
+    @Override
+    public void onLoadFinished(Loader<Cursor> loader, Cursor cursor) {
+        if (mActiveFragment != null) {
+            mActiveFragment.setCursor(cursor);
+        }
+    }
+
+    @Override
+    public void onLoaderReset(Loader<Cursor> loader) {
+        Log.d(TAG, "reset cursor loader!!!!");
+        if (mActiveFragment != null) {
+            mActiveFragment.setCursor(null);
+        }
+    }
+
+    @Override
+    public void onActiveSubredditChange(String subreddit, MainFragment mainFragment) {
+        Log.d(TAG, subreddit + "is visible!");
+        mActiveSubreddit = subreddit;
+        mActiveFragment = mainFragment;
+        getLoaderManager().restartLoader(POST_LOADER, null, this);
+
+    }
+
+    @Override
+    public void onItemSelected(String postPermaLink) {
+        Intent intent = new Intent(this, DetailActivity.class);
+        intent.putExtra(Intent.EXTRA_TEXT, postPermaLink);
+        startActivity(intent);
+    }
+
+    public class TabPagerAdapter extends FragmentStatePagerAdapter {
+        public TabPagerAdapter(FragmentManager fm) {
+            super(fm);
+        }
+
+        @Override
+        public Fragment getItem(int position) {
+           return new MainFragment().newInstance(mSubredditList.get(position));
+        }
+
+        @Override
+        public int getCount() {
+            return mSubredditList.size();
+        }
+
+        @Override
+        public CharSequence getPageTitle(int position) {
+            Log.d(TAG, "get PageTitle");
+            return mSubredditList.get(position);
+        }
     }
 }

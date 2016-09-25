@@ -18,6 +18,9 @@ public class RedditContract {
         public static final String COLUMN_TITLE = "title";
         public static final String COLUMN_AUTHOR = "author";
         public static final String COLUMN_PERMLINK = "permlink";
+        public static final String COLUMN_THUMBNAIL = "thumbnail";
+        public static final String COLUMN_SCORE = "score";
+        public static final String COLUMN_COMMENT_COUNT = "comment_count";
 
         public static Uri buildPostBySubreddit(String subredditName) {
             return BASE_CONTETN_URI.buildUpon().appendEncodedPath(subredditName).build();

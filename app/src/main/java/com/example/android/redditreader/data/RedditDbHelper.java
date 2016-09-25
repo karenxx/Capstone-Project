@@ -22,7 +22,10 @@ public class RedditDbHelper extends SQLiteOpenHelper {
                 PostEntry.COLUMN_SUBREDDIT_NAME + " TEXT NOT NULL," +
                 PostEntry.COLUMN_TITLE + " TEXT NOT NULL," +
                 PostEntry.COLUMN_AUTHOR + " TEXT NOT NULL," +
-                PostEntry.COLUMN_PERMLINK + " TEXT NOT NULL" +
+                PostEntry.COLUMN_PERMLINK + " TEXT NOT NULL," +
+                PostEntry.COLUMN_THUMBNAIL + " TEXT," +
+                PostEntry.COLUMN_SCORE + " INTEGER," +
+                PostEntry.COLUMN_COMMENT_COUNT + " INTEGER" +
                 ");";
         db.execSQL(SQL_CREATE_POST_TABLE);
     }

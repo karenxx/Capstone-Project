@@ -7,4 +7,7 @@
         android.support.design.widget.AppBarLayout$ScrollingViewBehavior</string>
     <string name="subreddit_file_key" translatable="false">subreddit_file_key</string>
     <string name="saved_subreddit_key" translatable="false">saved_subreddit_key</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>

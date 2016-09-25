@@ -60,6 +60,8 @@ public class RedditProvider extends ContentProvider {
 
     @Override
     public int bulkInsert(Uri uri, ContentValues[] initialValues) {
+        // Remove all old submission in provider.
+        delete(null, null, null);
         Log.d(LOG_TAG, "bulkInsert size " + initialValues.length);
         final SQLiteDatabase db = mDbHelper.getWritableDatabase();
         int rowInserted = 0;
@@ -91,6 +93,7 @@ public class RedditProvider extends ContentProvider {
         } finally {
             db.close();
         }
+        Log.d(LOG_TAG, "delete " + rowDeleted);
         return rowDeleted;
     }
 

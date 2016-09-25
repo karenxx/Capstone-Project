@@ -33,6 +33,9 @@ public class LoginActivity extends AppCompatActivity {
         final URL authorizationUrl = authenHandler.getAuthUrl();
         // Load the authorization URL into the browser
         webView.loadUrl(authorizationUrl.toExternalForm());
+        Log.d(LOG_TAG, "url is: " + authorizationUrl.toExternalForm());
+
+
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public void onPageStarted(WebView view, String url, Bitmap favicon) {

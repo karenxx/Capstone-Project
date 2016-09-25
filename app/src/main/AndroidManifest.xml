@@ -34,7 +34,7 @@
         <!-- The SyncAdapter service -->
         <service
             android:name=".sync.SubredditSyncService"
-            android:exported="true" >
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.content.SyncAdapter" />
             </intent-filter>
@@ -43,15 +43,17 @@
                 android:name="android.content.SyncAdapter"
                 android:resource="@xml/syncadapter_subreddit" />
         </service>
-        <service
-            android:name="com.example.android.redditreader.sync.SubredditAuthenticatorService">
+        <service android:name=".sync.SubredditAuthenticatorService">
             <intent-filter>
-                <action android:name="android.accounts.AccountAuthenticator"/>
+                <action android:name="android.accounts.AccountAuthenticator" />
             </intent-filter>
+
             <meta-data
                 android:name="android.accounts.AccountAuthenticator"
                 android:resource="@xml/authenticator" />
         </service>
+
+        <activity android:name=".UI.DetailActivity"></activity>
     </application>
 
 </manifest>
