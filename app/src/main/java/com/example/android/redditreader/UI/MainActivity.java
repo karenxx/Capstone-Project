@@ -13,6 +13,7 @@ import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
@@ -25,6 +26,9 @@ import com.example.android.redditreader.R;
 import com.example.android.redditreader.data.RedditContract;
 import com.example.android.redditreader.handler.AuthenHandler;
 import com.example.android.redditreader.sync.SubredditSyncAdapter;
+import com.google.android.gms.ads.MobileAds;
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.AdView;
 
 import net.dean.jraw.auth.AuthenticationManager;
 
@@ -36,6 +40,7 @@ public class MainActivity extends AppCompatActivity implements
     private static final String TAG = "MainActivity";
     private static final int POST_LOADER = 0;
 
+    TabLayout mTabLayout;
     TabPagerAdapter mTabPagerAdapter;
     ViewPager mViewpager;
 
@@ -66,7 +71,21 @@ public class MainActivity extends AppCompatActivity implements
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        MobileAds.initialize(getApplicationContext(), getString(R.string.app_id));
+        AdView mAdView = (AdView) findViewById(R.id.adView);
+        AdRequest adRequest = new AdRequest.Builder().build();
+        mAdView.loadAd(adRequest);
+
+        mTabLayout = (TabLayout) findViewById(R.id.tab_layout);
         mViewpager = (ViewPager) findViewById(R.id.pager);
+        mTabPagerAdapter = new TabPagerAdapter(getSupportFragmentManager());
+        mViewpager.setAdapter(mTabPagerAdapter);
+        //set tablayout with viewpager
+        mTabLayout.setupWithViewPager(mViewpager);
+
+        // adding functionality to tab and viewpager to manage each other when a page is changed or when a tab is selected
+        mViewpager.addOnPageChangeListener(new TabLayout.TabLayoutOnPageChangeListener(mTabLayout));
+
         updateSubreddits();
         registerSubredditObserver();
         mAccount = createSyncAccount(this);
@@ -81,17 +100,17 @@ public class MainActivity extends AppCompatActivity implements
     private void updateSubreddits() {
         SharedPreferences prefs = getSharedPreferences(getString(R.string.subreddit_file_key), Context.MODE_PRIVATE);
         String subreddits = prefs.getString(getString(R.string.saved_subreddit_key), null);
-        mSubredditList.clear();
+        List<String> updatedSubredditList = new ArrayList<>();
         if (subreddits != null) {
             String[] subredditsArray = subreddits.split(SubredditSyncAdapter.PREF_SEPARATOR);
             for (String str : subredditsArray) {
                 if (str.length() != 0) {
-                    mSubredditList.add(str);
+                    updatedSubredditList.add(str);
                 }
             }
         }
-        mTabPagerAdapter = new TabPagerAdapter(getSupportFragmentManager());
-        mViewpager.setAdapter(mTabPagerAdapter);
+        mSubredditList = updatedSubredditList;
+        mTabPagerAdapter.notifyDataSetChanged();
     }
 
     public void userInfo(View view) {
