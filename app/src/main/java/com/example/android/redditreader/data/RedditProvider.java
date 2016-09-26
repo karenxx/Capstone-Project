@@ -77,6 +77,7 @@ public class RedditProvider extends ContentProvider {
             db.close();
         }
         Log.d(LOG_TAG, "bulkInsert success size " + rowInserted);
+        getContext().getContentResolver().notifyChange(uri, null);
         return rowInserted;
     }
 

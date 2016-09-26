@@ -29,6 +29,8 @@ import com.example.android.redditreader.sync.SubredditSyncAdapter;
 import com.google.android.gms.ads.MobileAds;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
+import com.google.android.gms.ads.doubleclick.PublisherAdRequest;
+import com.google.firebase.analytics.FirebaseAnalytics;
 
 import net.dean.jraw.auth.AuthenticationManager;
 
@@ -43,6 +45,7 @@ public class MainActivity extends AppCompatActivity implements
     TabLayout mTabLayout;
     TabPagerAdapter mTabPagerAdapter;
     ViewPager mViewpager;
+    private FirebaseAnalytics mFirebaseAnalytics;
 
     public static final String AUTHORITY = "com.example.android.redditreader";
     // An account type, in the form of a domain name
@@ -75,6 +78,8 @@ public class MainActivity extends AppCompatActivity implements
         AdView mAdView = (AdView) findViewById(R.id.adView);
         AdRequest adRequest = new AdRequest.Builder().build();
         mAdView.loadAd(adRequest);
+
+        mFirebaseAnalytics = FirebaseAnalytics.getInstance(this);
 
         mTabLayout = (TabLayout) findViewById(R.id.tab_layout);
         mViewpager = (ViewPager) findViewById(R.id.pager);
@@ -113,18 +118,13 @@ public class MainActivity extends AppCompatActivity implements
         mTabPagerAdapter.notifyDataSetChanged();
     }
 
-    public void userInfo(View view) {
-        Log.d(TAG, "userinfo restart cursor loader");
-        getLoaderManager().restartLoader(POST_LOADER, null, this);
-    }
-
     @TargetApi(Build.VERSION_CODES.JELLY_BEAN)
     @Override
     protected void onResume() {
         super.onResume();
+        Log.d(TAG, "On resume");
         checkAuthenState();
     }
-
 
     public void checkAuthenState() {
         AuthenHandler authenHandler = AuthenHandler.get(this);
@@ -158,6 +158,7 @@ public class MainActivity extends AppCompatActivity implements
          * manual sync settings
          */
         ContentResolver.requestSync(mAccount, AUTHORITY, settingsBundle);
+        getLoaderManager().restartLoader(POST_LOADER, null, this);
     }
 
     /**
@@ -180,9 +181,8 @@ public class MainActivity extends AppCompatActivity implements
         if (accountManager.addAccountExplicitly(newAccount, null, null)) {
             /*
              * If you don't set android:syncable="true" in
-             * in your <provider> element in the manifest,
-             * then call context.setIsSyncable(account, AUTHORITY, 1)
-             * here.
+             * your <provider> element in the manifest, then
+             * call context.setIsSyncable(account, AUTHORITY, 1) here.
              */
         } else {
             Log.e(TAG, "createSyncAccount() error");
@@ -258,6 +258,11 @@ public class MainActivity extends AppCompatActivity implements
         @Override
         public CharSequence getPageTitle(int position) {
             Log.d(TAG, "get PageTitle");
+
+            Bundle params = new Bundle();
+            params.putString("subredit", mSubredditList.get(position));
+            mFirebaseAnalytics.logEvent("open subreddit", params);
+
             return mSubredditList.get(position);
         }
     }

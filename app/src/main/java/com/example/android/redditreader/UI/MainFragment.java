@@ -52,7 +52,9 @@ public class MainFragment extends Fragment {
     }
 
     public void setCursor(Cursor cursor) {
-        Log.d(TAG, "fragment get cursor size" + cursor.getCount() + mSubreddit);
+        if (cursor == null) {
+            return;
+        }
         if (cursor.getCount() > 0) {
             cursor.moveToFirst();
             Log.d(TAG, "subreddit in cursor" + cursor.getString(cursor.getColumnIndex(RedditContract.PostEntry.COLUMN_SUBREDDIT_NAME)));

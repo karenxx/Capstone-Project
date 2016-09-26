@@ -2,11 +2,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.android.redditreader">
 
-    <uses-permission android:name="android.permission.ACCOUNT_MANAGER" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.READ_SYNC_SETTINGS" />
     <uses-permission android:name="android.permission.WRITE_SYNC_SETTINGS" />
     <uses-permission android:name="android.permission.AUTHENTICATE_ACCOUNTS" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <application
         android:allowBackup="true"
@@ -53,7 +54,17 @@
                 android:resource="@xml/authenticator" />
         </service>
 
-        <activity android:name=".UI.DetailActivity"></activity>
+        <activity android:name=".UI.DetailActivity" />
+
+        <receiver android:name=".widget.RedditWidget">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/reddit_widget_info" />
+        </receiver>
     </application>
 
 </manifest>

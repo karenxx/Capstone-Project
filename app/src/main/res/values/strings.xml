@@ -10,4 +10,6 @@
 
     <string name="banner_ad_unit_id">ca-app-pub-9330512670537463/9823439434</string>
     <string name="app_id">ca-app-pub-9330512670537463~8346706235</string>
+    <string name="appwidget_text">RedditReader</string>
+    <!--<string name="add_widget">Add widget</string>-->
 </resources>
