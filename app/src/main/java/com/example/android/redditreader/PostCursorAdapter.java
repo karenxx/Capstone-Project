@@ -16,7 +16,6 @@ import com.squareup.picasso.Picasso;
 public class PostCursorAdapter extends CursorAdapter {
     public static final String LOG_TAG = PostCursorAdapter.class.getSimpleName();
     public Context mContext;
-    ImageView mThumbnailView;
 
     public static class ViewHolder {
         public final TextView titleView;
@@ -41,7 +40,6 @@ public class PostCursorAdapter extends CursorAdapter {
 
     @Override
     public View newView(Context context, Cursor cursor, ViewGroup parent) {
-        Log.d(LOG_TAG, "new view");
         View view = LayoutInflater.from(context).inflate(R.layout.list_item_post, parent, false);
         ViewHolder viewHolder = new ViewHolder(view);
         view.setTag(viewHolder);
@@ -52,14 +50,13 @@ public class PostCursorAdapter extends CursorAdapter {
     public void bindView(View view, Context context, Cursor cursor) {
         ViewHolder viewHolder = (ViewHolder) view.getTag();
         String title = cursor.getString(cursor.getColumnIndex(PostEntry.COLUMN_TITLE));
-        Log.d(LOG_TAG, "title: " + title);
         viewHolder.titleView.setText(title);
 
         String author = cursor.getString(cursor.getColumnIndex(PostEntry.COLUMN_AUTHOR));
         viewHolder.authorView.setText(author);
 
         int commentCount = cursor.getInt(cursor.getColumnIndex(PostEntry.COLUMN_COMMENT_COUNT));
-        viewHolder.commentCountView.setText(commentCount +"");
+        viewHolder.commentCountView.setText(commentCount + "");
 
         int score = cursor.getInt(cursor.getColumnIndex(PostEntry.COLUMN_SCORE));
         viewHolder.scoreView.setText(score + "");

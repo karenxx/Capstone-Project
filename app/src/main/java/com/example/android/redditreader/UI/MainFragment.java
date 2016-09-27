@@ -16,30 +16,16 @@ import com.example.android.redditreader.PostCursorAdapter;
 import com.example.android.redditreader.R;
 import com.example.android.redditreader.data.RedditContract;
 
-/**
- * A simple {@link Fragment} subclass.
- * Activities that contain this fragment must implement the
- * {@link OnActiveSubredditChangeListener} interface
- * to handle interaction events.
- * Use the {@link MainFragment#newInstance} factory method to
- * create an instance of this fragment.
- */
 public class MainFragment extends Fragment {
-    private static final String TAG = "MainFragment";
+    private static final String TAG = MainFragment.class.getSimpleName();
     private static final String SUBREDDIT_KEY = "subreddit_key";
 
     private String mSubreddit;
     private PostCursorAdapter mPostCursorAdapter;
     private ListView mListView;
 
-    private OnActiveSubredditChangeListener mListener;
-
-    public MainFragment() {
-        Log.d(TAG, "new adapter " + mSubreddit);
-    }
-
     public interface Callback {
-        public void onItemSelected(String postPermaLink);
+        void onItemSelected(String postPermaLink);
     }
 
 
@@ -57,7 +43,6 @@ public class MainFragment extends Fragment {
         }
         if (cursor.getCount() > 0) {
             cursor.moveToFirst();
-            Log.d(TAG, "subreddit in cursor" + cursor.getString(cursor.getColumnIndex(RedditContract.PostEntry.COLUMN_SUBREDDIT_NAME)));
         }
         mPostCursorAdapter.swapCursor(cursor);
     }
@@ -67,7 +52,6 @@ public class MainFragment extends Fragment {
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
             mSubreddit = getArguments().getString(SUBREDDIT_KEY);
-            Log.d(TAG, "fragment on create " + mSubreddit);
         }
     }
 
@@ -96,41 +80,5 @@ public class MainFragment extends Fragment {
     public void onAttach(Context context) {
         super.onAttach(context);
         mPostCursorAdapter = new PostCursorAdapter(getActivity(), null, 0);
-        if (context instanceof OnActiveSubredditChangeListener) {
-            mListener = (OnActiveSubredditChangeListener) context;
-        } else {
-            throw new RuntimeException(context.toString()
-                    + " must implement OnActiveSubredditChangeListener");
-        }
-    }
-
-    @Override
-    public void onDetach() {
-        super.onDetach();
-        mListener = null;
-    }
-
-    @Override
-    public void setMenuVisibility(final boolean visible) {
-        super.setMenuVisibility(visible);
-        if (visible) {
-            if (mListener != null)
-                mListener.onActiveSubredditChange(mSubreddit, this);
-        }
-    }
-
-    /**
-     * This interface must be implemented by activities that contain this
-     * fragment to allow an interaction in this fragment to be communicated
-     * to the activity and potentially other fragments contained in that
-     * activity.
-     * <p/>
-     * See the Android Training lesson <a href=
-     * "http://developer.android.com/training/basics/fragments/communicating.html"
-     * >Communicating with Other Fragments</a> for more information.
-     */
-    public interface OnActiveSubredditChangeListener {
-        // TODO: Update argument type and name
-        void onActiveSubredditChange(String subreddit, MainFragment fragment);
     }
 }

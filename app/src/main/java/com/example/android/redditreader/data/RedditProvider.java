@@ -26,23 +26,31 @@ public class RedditProvider extends ContentProvider {
     @Nullable
     @Override
     public Cursor query(Uri uri, String[] projection, String selection, String[] selectionArgs, String sortOrder) {
+        Log.e(LOG_TAG, "query");
         String subreddit = uri.getEncodedPath();
         if (subreddit.length() < 2) {
             Log.e(LOG_TAG, "invalid uri for query");
         }
         subreddit = subreddit.substring(1); //remove "/";
-        Log.d(LOG_TAG, "subreddit: " + subreddit);
-        Cursor retCursor= mDbHelper.getReadableDatabase().query(
-                        RedditContract.PostEntry.TABLE_NAME,
-                        null,
-                        SUBREDDIT_SELECTION,
-                        new String[] {subreddit},
-                        null,
-                        null,
-                        sortOrder
-                );
-        retCursor.setNotificationUri(getContext().getContentResolver(), uri);
-        Log.d(LOG_TAG, "cursor count" + retCursor.getCount());
+
+        final SQLiteDatabase db = mDbHelper.getReadableDatabase();
+        Cursor retCursor = null;
+        try {
+            retCursor= db.query(
+                    RedditContract.PostEntry.TABLE_NAME,
+                    null,
+                    SUBREDDIT_SELECTION,
+                    new String[] {subreddit},
+                    null,
+                    null,
+                    sortOrder
+            );
+
+            retCursor.setNotificationUri(getContext().getContentResolver(), uri);
+            Log.d(LOG_TAG, "cursor count" + retCursor.getCount());
+        } catch (Exception e) {
+            Log.d(LOG_TAG, "query db error: " + e);
+        }
         return retCursor;
     }
 
@@ -73,17 +81,13 @@ public class RedditProvider extends ContentProvider {
             }
         } catch (Exception e) {
             Log.d(LOG_TAG, "Insert db error: " + e);
-        } finally {
-            db.close();
         }
-        Log.d(LOG_TAG, "bulkInsert success size " + rowInserted);
         getContext().getContentResolver().notifyChange(uri, null);
         return rowInserted;
     }
 
     @Override
     public int delete(Uri uri, String selection, String[] selectionArgs) {
-        Log.d(LOG_TAG, "delete");
         final SQLiteDatabase db = mDbHelper.getWritableDatabase();
         int rowDeleted = -1;
         try {
@@ -91,8 +95,6 @@ public class RedditProvider extends ContentProvider {
 
         } catch (Exception e) {
             Log.d(LOG_TAG, "Delete db error: " + e);
-        } finally {
-            db.close();
         }
         Log.d(LOG_TAG, "delete " + rowDeleted);
         return rowDeleted;

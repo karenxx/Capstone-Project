@@ -23,7 +23,6 @@
             </intent-filter>
         </activity>
         <activity android:name=".UI.LoginActivity" />
-        <activity android:name=".UserInfoActivity" />
 
         <provider
             android:name=".data.RedditProvider"
@@ -56,15 +55,23 @@
 
         <activity android:name=".UI.DetailActivity" />
 
-        <receiver android:name=".widget.RedditWidget">
+        <receiver
+            android:name=".widget.RedditWidget"
+            android:label="@string/widget_title">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.example.android.redditreader.ACTION_UPDATE" />
             </intent-filter>
 
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/reddit_widget_info" />
         </receiver>
+
+        <service
+            android:name=".widget.RedditWidgetRemoteViewServices"
+            android:exported="false"
+            android:permission="android.permission.BIND_REMOTEVIEWS"/>
     </application>
 
 </manifest>

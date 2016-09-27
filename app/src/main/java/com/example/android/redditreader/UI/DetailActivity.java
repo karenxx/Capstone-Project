@@ -6,7 +6,6 @@ import android.os.Bundle;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
-
 import com.example.android.redditreader.R;
 
 
@@ -27,7 +26,7 @@ public class DetailActivity extends AppCompatActivity {
         final WebView webView = (WebView) findViewById(R.id.post_detail_webview);
 
         String postPermaLink = getIntent().getStringExtra(Intent.EXTRA_TEXT);
-        String link = "http://www.reddit.com" + postPermaLink;
+        String link = getApplicationContext().getString(R.string.reddit_link) + postPermaLink;
         webView.setWebViewClient(new MyWebViewClient());
         webView.loadUrl(link);
 

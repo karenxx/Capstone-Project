@@ -13,7 +13,6 @@ import com.example.android.redditreader.handler.AuthenHandler;
 import net.dean.jraw.auth.AuthenticationManager;
 
 public class SubredditSyncService extends Service {
-    private static final String TAG = "SubredditSyncService";
     private static final Object sSyncAdapterLock = new Object();
     private static SubredditSyncAdapter sSubredditSyncAdapter = null;
 

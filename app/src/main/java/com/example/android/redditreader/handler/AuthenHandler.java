@@ -34,13 +34,11 @@ public class AuthenHandler {
         TokenStore tokenStore = new TokenStore() {
             @Override
             public boolean isStored(String key) {
-                Log.d(LOG_TAG, "isStored()");
                 return PreferenceManager.getDefaultSharedPreferences(mContext).contains(key);
             }
 
             @Override
             public String readToken(String key) throws NoSuchTokenException {
-                Log.d(LOG_TAG, "readtoken()");
                 String token = PreferenceManager.getDefaultSharedPreferences(mContext)
                         .getString(key, null);
                 if (token == null) {
@@ -51,7 +49,6 @@ public class AuthenHandler {
 
             @Override
             public void writeToken(String key, String token) {
-                Log.d(LOG_TAG, "writetoken()");
                 PreferenceManager.getDefaultSharedPreferences(mContext).edit()
                         .putString(key, token);
             }

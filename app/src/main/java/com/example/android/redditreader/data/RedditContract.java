@@ -5,6 +5,8 @@ import android.content.ContentUris;
 import android.net.Uri;
 import android.provider.BaseColumns;
 
+import com.example.android.redditreader.R;
+
 /**
  * Defines table and column names for the reddit database.
  */

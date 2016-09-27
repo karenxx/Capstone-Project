@@ -19,8 +19,10 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewGroup;
 
 import com.example.android.redditreader.R;
 import com.example.android.redditreader.data.RedditContract;
@@ -35,19 +37,23 @@ import com.google.firebase.analytics.FirebaseAnalytics;
 import net.dean.jraw.auth.AuthenticationManager;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class MainActivity extends AppCompatActivity implements
-        LoaderManager.LoaderCallbacks<Cursor>, MainFragment.OnActiveSubredditChangeListener, MainFragment.Callback{
-    private static final String TAG = "MainActivity";
+        LoaderManager.LoaderCallbacks<Cursor>, MainFragment.Callback{
+    private static final String TAG = MainActivity.class.getSimpleName();
     private static final int POST_LOADER = 0;
+
+    Map<String, MainFragment> mSavedFragment = new HashMap<>();
 
     TabLayout mTabLayout;
     TabPagerAdapter mTabPagerAdapter;
     ViewPager mViewpager;
     private FirebaseAnalytics mFirebaseAnalytics;
 
-    public static final String AUTHORITY = "com.example.android.redditreader";
+    //public static final String AUTHORITY = "com.example.android.redditreader";
     // An account type, in the form of a domain name
     public static final String ACCOUNT_TYPE = "redditreader.example.com";
     // The account name
@@ -58,11 +64,35 @@ public class MainActivity extends AppCompatActivity implements
     private List<String> mSubredditList = new ArrayList<>();
     private String mActiveSubreddit;
     private MainFragment mActiveFragment;
+    private OnSubredditChangeListener mSubredditChangeListener = new OnSubredditChangeListener();
+
+    private class OnSubredditChangeListener extends ViewPager.SimpleOnPageChangeListener {
+        Boolean first = true;
+
+        public void setFirst(boolean isFirst) {
+            first = isFirst;
+        }
+
+        @Override
+        public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+            if (first){
+                onPageSelected(position);
+                first = false;
+            }
+        }
+
+        @Override
+        public void onPageSelected(int position) {
+            mActiveSubreddit = mSubredditList.get(position);
+            mActiveFragment = mSavedFragment.get(mSubredditList.get(position));
+            Log.d(TAG, "onPageSelected" + mActiveSubreddit + mActiveFragment);
+            getLoaderManager().restartLoader(POST_LOADER, null, MainActivity.this);
+        }
+    }
 
     SharedPreferences.OnSharedPreferenceChangeListener mSubredditPrefListener = new SharedPreferences.OnSharedPreferenceChangeListener() {
         @Override
         public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-            Log.d(TAG, "saved subreddit key changed " + key);
             if (key.equals(getString(R.string.saved_subreddit_key))) {
                 updateSubreddits();
             }
@@ -78,20 +108,23 @@ public class MainActivity extends AppCompatActivity implements
         AdView mAdView = (AdView) findViewById(R.id.adView);
         AdRequest adRequest = new AdRequest.Builder().build();
         mAdView.loadAd(adRequest);
+        Toolbar myToolbar = (Toolbar) findViewById(R.id.my_toolbar);
+        setSupportActionBar(myToolbar);
 
         mFirebaseAnalytics = FirebaseAnalytics.getInstance(this);
 
         mTabLayout = (TabLayout) findViewById(R.id.tab_layout);
         mViewpager = (ViewPager) findViewById(R.id.pager);
         mTabPagerAdapter = new TabPagerAdapter(getSupportFragmentManager());
+        updateSubreddits();
         mViewpager.setAdapter(mTabPagerAdapter);
         //set tablayout with viewpager
         mTabLayout.setupWithViewPager(mViewpager);
 
         // adding functionality to tab and viewpager to manage each other when a page is changed or when a tab is selected
         mViewpager.addOnPageChangeListener(new TabLayout.TabLayoutOnPageChangeListener(mTabLayout));
+        mViewpager.addOnPageChangeListener(mSubredditChangeListener);
 
-        updateSubreddits();
         registerSubredditObserver();
         mAccount = createSyncAccount(this);
         getLoaderManager().initLoader(POST_LOADER, null, this);
@@ -122,7 +155,7 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     protected void onResume() {
         super.onResume();
-        Log.d(TAG, "On resume");
+        mSubredditChangeListener.setFirst(true);
         checkAuthenState();
     }
 
@@ -157,7 +190,7 @@ public class MainActivity extends AppCompatActivity implements
          * Request the sync for the default account, authority, and
          * manual sync settings
          */
-        ContentResolver.requestSync(mAccount, AUTHORITY, settingsBundle);
+        ContentResolver.requestSync(mAccount, getResources().getString(R.string.content_authority), settingsBundle);
         getLoaderManager().restartLoader(POST_LOADER, null, this);
     }
 
@@ -211,6 +244,7 @@ public class MainActivity extends AppCompatActivity implements
 
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor cursor) {
+        Log.d(TAG, "cursorl load finish " + (cursor == null? "null" : cursor.getCount() + ""));
         if (mActiveFragment != null) {
             mActiveFragment.setCursor(cursor);
         }
@@ -218,19 +252,9 @@ public class MainActivity extends AppCompatActivity implements
 
     @Override
     public void onLoaderReset(Loader<Cursor> loader) {
-        Log.d(TAG, "reset cursor loader!!!!");
         if (mActiveFragment != null) {
             mActiveFragment.setCursor(null);
         }
-    }
-
-    @Override
-    public void onActiveSubredditChange(String subreddit, MainFragment mainFragment) {
-        Log.d(TAG, subreddit + "is visible!");
-        mActiveSubreddit = subreddit;
-        mActiveFragment = mainFragment;
-        getLoaderManager().restartLoader(POST_LOADER, null, this);
-
     }
 
     @Override
@@ -247,7 +271,9 @@ public class MainActivity extends AppCompatActivity implements
 
         @Override
         public Fragment getItem(int position) {
-           return new MainFragment().newInstance(mSubredditList.get(position));
+            MainFragment fragment = MainFragment.newInstance(mSubredditList.get(position));
+            mSavedFragment.put(mSubredditList.get(position), fragment);
+           return fragment;
         }
 
         @Override
@@ -260,10 +286,16 @@ public class MainActivity extends AppCompatActivity implements
             Log.d(TAG, "get PageTitle");
 
             Bundle params = new Bundle();
-            params.putString("subredit", mSubredditList.get(position));
-            mFirebaseAnalytics.logEvent("open subreddit", params);
+            params.putString(getResources().getString(R.string.subreddit), mSubredditList.get(position));
+            mFirebaseAnalytics.logEvent(getResources().getString(R.string.analytics_event_open_subreddit), params);
 
             return mSubredditList.get(position);
+        }
+
+        @Override
+        public void destroyItem(ViewGroup container, int position, Object object) {
+            mSavedFragment.remove(mSubredditList.get(position));
+            super.destroyItem(container, position, object);
         }
     }
 }

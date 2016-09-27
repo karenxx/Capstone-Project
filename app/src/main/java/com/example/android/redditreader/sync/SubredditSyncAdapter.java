@@ -7,6 +7,7 @@ import android.content.ContentProviderClient;
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SyncRequest;
 import android.content.SyncResult;
@@ -36,6 +37,8 @@ public class SubredditSyncAdapter extends AbstractThreadedSyncAdapter {
     public static final int SYNC_FLEXTIME = SYNC_INTERVAL / 24;
     public static final String PREF_SEPARATOR = "#";
     private static final int POST_LIMIT_COUNT = 100;
+    public static final String ACTION_UPDATE = "com.example.android.redditreader.ACTION_UPDATE";
+
     ContentResolver mContentResolver;
     final Context mContext;
 
@@ -56,7 +59,7 @@ public class SubredditSyncAdapter extends AbstractThreadedSyncAdapter {
         Log.d(LOG_TAG, "Starting sync");
 
         RedditClient redditClient = AuthenticationManager.get().getRedditClient();
-        UserSubredditsPaginator userSubredditsPaginator = new UserSubredditsPaginator(redditClient, "subscriber");
+        UserSubredditsPaginator userSubredditsPaginator = new UserSubredditsPaginator(redditClient, mContext.getString(R.string.reddit_client_location));
         String subredditPref = "";
         List<String> subredditList = new ArrayList<>();
         try {
@@ -64,7 +67,6 @@ public class SubredditSyncAdapter extends AbstractThreadedSyncAdapter {
                 Listing<Subreddit> subreddits = userSubredditsPaginator.next();
                 for (Subreddit subreddit : subreddits) {
                     if (!subreddit.isNsfw()) {
-                        Log.d(LOG_TAG, "subreddit ID: " + subreddit.getId() + subreddit.getDisplayName());
                         subredditPref += subreddit.getDisplayName() + PREF_SEPARATOR;
                         subredditList.add(subreddit.getDisplayName());
                     }
@@ -72,7 +74,6 @@ public class SubredditSyncAdapter extends AbstractThreadedSyncAdapter {
             }
             SharedPreferences.Editor editor = mContext.getSharedPreferences(mContext.getString(R.string.subreddit_file_key), Context.MODE_PRIVATE).edit();
             editor.putString(mContext.getString(R.string.saved_subreddit_key), subredditPref);
-            Log.d(LOG_TAG, "write to sharedpref");
             editor.apply();
         } catch (Exception e) {
             Log.e(LOG_TAG, "Error message: ", e);
@@ -117,6 +118,11 @@ public class SubredditSyncAdapter extends AbstractThreadedSyncAdapter {
         } catch (Exception e) {
             Log.e(LOG_TAG, "ERROR: ", e);
         }
+
+        Intent dataupdatedIntent = new Intent(ACTION_UPDATE);
+
+        getContext().sendBroadcast(dataupdatedIntent);
+
     }
 
 

@@ -1,15 +1,27 @@
 <resources>
-    <string name="app_name">Reddit Reader</string>
-    <string name="sync_account_type">redditreader.example.com</string>
-    <string name="content_authority">com.example.android.redditreader</string>
+    <string name="app_name" translatable="false">Reddit Reader</string>
 
-     <string name="appbar_scrolling_view_behavior" translatable="false">
-        android.support.design.widget.AppBarLayout$ScrollingViewBehavior</string>
+    <string name="REDDIT_CLIENT_ID" translatable="false">MFe5_m-ZqVQAig</string>
+
+    <string name="sync_account_type" translatable="false">redditreader.example.com</string>
+    <string name="content_authority" translatable="false">com.example.android.redditreader</string>
+
+     <!--<string name="appbar_scrolling_view_behavior" translatable="false">-->
+        <!--android.support.design.widget.AppBarLayout$ScrollingViewBehavior</string>-->
     <string name="subreddit_file_key" translatable="false">subreddit_file_key</string>
     <string name="saved_subreddit_key" translatable="false">saved_subreddit_key</string>
 
-    <string name="banner_ad_unit_id">ca-app-pub-9330512670537463/9823439434</string>
-    <string name="app_id">ca-app-pub-9330512670537463~8346706235</string>
-    <string name="appwidget_text">RedditReader</string>
-    <!--<string name="add_widget">Add widget</string>-->
+    <string name="subreddit" translatable="false">subreddit</string>
+    <string name="analytics_event_open_subreddit" translatable="false">open subreddit</string>
+
+    <string name="banner_ad_unit_id" translatable="false">ca-app-pub-9330512670537463/9823439434</string>
+    <string name="app_id" translatable="false">ca-app-pub-9330512670537463~8346706235</string>
+
+    <!--Syncadapter-->
+    <string name="reddit_client_location" translatable="false">subscriber</string>
+
+    <string name="reddit_link" translatable="false">http://www.reddit.com</string>
+
+    <string name="widget_title" translatable="false">RedditReader</string>
+
 </resources>
