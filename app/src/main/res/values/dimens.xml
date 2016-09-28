@@ -13,6 +13,10 @@
     <dimen name="post_icon_margin">4dp</dimen>
     <dimen name="post_icon_margin_bottom">1dp</dimen>
 
+    <dimen name="toolbar_height">56dp</dimen>
+    <dimen name="subtitle_height">48dp</dimen>
+    <dimen name="viewpager_margin_top">104dp</dimen>
+
     <dimen name="widget_margin">8dp</dimen>
     <dimen name="widget_minWidth">40dp</dimen>
     <dimen name="widget_minHeight">180dp</dimen>
